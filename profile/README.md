@@ -10,7 +10,7 @@ What we do
 Hire or support us
 - Quick tasks: README fix — ₦2,500 | Demo or small contract fix — ₦5,000
 - Contact (fastest): WhatsApp +2348104908260
-- Payments: Paystack / Payoneer / Crypto tips: 0xYourAddress
+- Payments: Paystack / Payoneer / Crypto tips.
 
 Pinned demo
 - slipmint-portal — https://github.com/xpert-global-systems/slipmint-portal
