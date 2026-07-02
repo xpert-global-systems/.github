@@ -1,0 +1,73 @@
+name: Global Org Organizer
+
+# This allows other repositories in the organization to call this script
+on:
+  workflow_call:
+    inputs:
+      lint-command:
+        description: 'The specific lint command to run (e.g., "npm run lint")'
+        required: false
+        type: string
+        default: 'npm run lint'
+      run-cleanup:
+        description: 'Should we auto-clean loose markdown/media files?'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  triage-and-clean:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      # 1. Pull down the target repository's code
+      - name: Checkout Target Code
+        uses: actions/checkout@v4
+
+      # 2. Automated File Cleanup (Runs if enabled)
+      - name: Organize Loose Repository Files
+        if: ${{ inputs.run-cleanup == true }}
+        run: |
+          echo "🔍 Starting organization-wide repository cleanup..."
+          mkdir -p docs assets
+          
+          # Move loose markdown files (ignoring root README)
+          find . -maxdepth 1 -type f -name "*.md" ! -name "README.md" -exec mv {} docs/ \;
+          
+          # Move loose graphics/media assets
+          find . -maxdepth 1 -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.gif" -o -name "*.svg" \) -exec mv {} assets/ \;
+          echo "✅ File system tidy up complete."
+
+      # 3. Code Sanity Check (Adapts to Node.js/JavaScript stacks like slipmint-portal)
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies & Run Lint Checks
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+            ${{ inputs.lint-command }}
+          else
+            echo "No package.json found. Skipping linting steps."
+          fi
+
+      # 4. Commit any file organization adjustments back to the caller repo
+      - name: Commit Organized Files
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "chore: auto-organized by global org workflow [skip ci]"
+            git push
+          else
+            echo "Repository layout is already perfectly organized!"
+          fi
