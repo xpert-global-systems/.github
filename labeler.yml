@@ -1,0 +1,20 @@
+# Rules to automatically add labels to Pull Requests based on modified files
+frontend:
+  - 'src/frontend/**/*'
+  - 'public/**/*'
+
+backend:
+  - 'src/backend/**/*'
+  - 'api/**/*'
+
+database:
+  - 'migrations/**/*'
+  - 'models/**/*'
+
+documentation:
+  - '*.md'
+  - 'docs/**/*'
+
+testing:
+  - 'tests/**/*'
+  - '*.test.js'
