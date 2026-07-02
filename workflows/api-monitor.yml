@@ -1,0 +1,43 @@
+name: API Health Monitor
+
+on:
+  schedule:
+    # Runs every 30 minutes automatically
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Allows you to manually click "Run" anytime
+
+jobs:
+  check-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Live API Endpoint
+        id: api_check
+        run: |
+          # Replace the URL below with your actual deployed SlipMint API endpoint URL
+          API_URL="https://slipmint.com"
+          
+          echo "📡 Pinging $API_URL..."
+          STATUS_CODE=$(curl -o /dev/null -s -w "%{http_code}" "$API_URL")
+          echo "Response Status: $STATUS_CODE"
+          
+          if [ "$STATUS_CODE" -ne 200 ]; then
+            echo "🚨 API Is Down! Status code: $STATUS_CODE"
+            echo "failed=true" >> $GITHUB_OUTPUT
+            echo "status=$STATUS_CODE" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "✅ API is healthy and operational."
+
+      # This step only runs if the step above fails
+      - name: Create Alert Issue if API is Down
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 CRITICAL: SlipMint Portal API is down!',
+              body: 'The automated system check failed. The live production or staging API endpoint is down or returning an error status code. Please investigate immediately.',
+              labels: ['bug', 'critical']
+            });
