@@ -1,0 +1,31 @@
+name: Project Management Triage
+
+on:
+  pull_request:
+    types: [opened, reopened]
+  issues:
+    types: [opened]
+
+jobs:
+  auto-management:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    
+    steps:
+      # Automatically welcome contributors and prompt for clear descriptions
+      - name: Welcome & Triage
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const isPR = !!context.payload.pull_request;
+            const type = isPR ? 'Pull Request' : 'Issue';
+            const user = context.actor;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `👋 @${user}, thank you for opening this ${type}! Our team will review this shortly. Please ensure you have linked any related issues or milestones.`
+            });
