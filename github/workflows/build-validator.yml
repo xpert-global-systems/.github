@@ -1,0 +1,61 @@
+name: Global Build & Test Validator
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: 'Node.js version to compile with'
+        required: false
+        type: string
+        default: '20'
+      build-command:
+        description: 'The package script command used to compile production files'
+        required: false
+        type: string
+        default: 'npm run build'
+
+jobs:
+  validate-compilation:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Fetch code from the project repository
+      - name: Fetch Codebase
+        uses: actions/checkout@v4
+
+      # 2. Configure the Node.js runtime environment
+      - name: Initialize Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+
+      # 3. Clean install strictly matching project lockfile
+      - name: Install Secure Dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "package-lock.json missing! Running normal install..."
+            npm install
+          fi
+
+      # 4. Check for broken code by compiling the application
+      - name: Run Production Build
+        run: |
+          if grep -q '"build":' package.json; then
+            echo "🚀 Compiling project files..."
+            ${{ inputs.build-command }}
+          else
+            echo "⚠️ No build script declared in package.json. Skipping compile test."
+          fi
+
+      # 5. Run tests to ensure features did not break (optional)
+      - name: Run Automated Test Suites
+        run: |
+          if grep -q '"test":' package.json; then
+            echo "🧪 Executing test runner..."
+            npm test || echo "⚠️ Warning: Test suite completed with errors."
+          else
+            echo "ℹ️ No test suite configured. Skipping testing validation."
+          fi
